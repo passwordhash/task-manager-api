@@ -1,0 +1,9 @@
+version: "3"
+
+dotenv: [.env.local]
+
+tasks:
+    run:
+        desc: Run the application
+        cmds:
+            - go run ./cmd/http_server/main.go

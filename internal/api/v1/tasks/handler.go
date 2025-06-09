@@ -6,19 +6,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type TaskRunner interface {
+type TaskManager interface {
 	Run(ctx context.Context)
 }
 
 type handler struct {
-	taskRunner TaskRunner
+	taskManager TaskManager
 }
 
 func NewHandler(
-	taskRunner TaskRunner,
+	taskRunner TaskManager,
 ) *handler {
 	return &handler{
-		taskRunner: taskRunner,
+		taskManager: taskRunner,
 	}
 }
 

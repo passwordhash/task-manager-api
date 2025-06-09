@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	tasks "github.com/passwordhash/task-manager-api/internal/api/v1/tasks"
 )
 
 const shutdownTimeout = 5 * time.Second
@@ -56,6 +57,13 @@ func (a *App) Run() error {
 
 	router := gin.New()
 	router.Use(gin.Recovery())
+
+	api := router.Group("/api")
+	v1 := api.Group("/v1")
+
+	tasksHandler := tasks.NewHandler()
+
+	tasksHandler.RegisterRoutes(v1)
 
 	srv := &http.Server{
 		Addr:         ":" + strconv.Itoa(a.port),

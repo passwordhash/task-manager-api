@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	tasks "github.com/passwordhash/task-manager-api/internal/api/v1/tasks"
+	"github.com/passwordhash/task-manager-api/internal/services/task_mock"
 )
 
 const shutdownTimeout = 5 * time.Second
@@ -55,13 +56,15 @@ func (a *App) Run() error {
 
 	log.Info("Starting HTTP server")
 
+	taskService := task_mock.NewMockTaskService(log)
+
 	router := gin.New()
 	router.Use(gin.Recovery())
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
 
-	tasksHandler := tasks.NewHandler()
+	tasksHandler := tasks.NewHandler(taskService)
 
 	tasksHandler.RegisterRoutes(v1)
 

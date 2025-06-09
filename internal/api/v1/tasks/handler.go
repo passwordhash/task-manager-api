@@ -1,14 +1,25 @@
 package tasks
 
-import "github.com/gin-gonic/gin"
+import (
+	"context"
 
-type
+	"github.com/gin-gonic/gin"
+)
 
-type handler struct {
+type TaskRunner interface {
+	Run(ctx context.Context)
 }
 
-func NewHandler() *handler {
-	return &handler{}
+type handler struct {
+	taskRunner TaskRunner
+}
+
+func NewHandler(
+	taskRunner TaskRunner,
+) *handler {
+	return &handler{
+		taskRunner: taskRunner,
+	}
 }
 
 func (h *handler) RegisterRoutes(router *gin.RouterGroup) {

@@ -1,5 +1,7 @@
 # Task Manager API
 
+За
+
 <!-- HTTP-сервис для управления длительными I/O-задачами в памяти.
 Позволяет создавать задачи, запрашивать их статус, удалять задачи и получать результаты. -->
 
@@ -15,18 +17,16 @@
 
 2. Установить зависимости
 
-```bash
-go mod tidy
-```
+    ```bash
+    go mod tidy
+    ```
 
 3. Запустить через Taskfile (при наличии)
 
-```bash
-task run
-```
-
-или вручную
-
-```bash
-go run ./cmd/http_server/main.go -config=./configs/local.yml
-```
+    ```bash
+    task run
+    ```
+    или вручную
+    ```bash
+    go run ./cmd/http_server/main.go -config=./configs/local.yml
+    ```

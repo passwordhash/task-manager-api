@@ -15,7 +15,7 @@ func main() {
 
 	cfg := config.MustLoad()
 
-	log := config.SetupLogger(cfg.App.Env)
+	log := config.SetupLogger(cfg.Env)
 
 	application := app.New(ctx, log, cfg)
 
@@ -28,7 +28,7 @@ func main() {
 
 	log.Info("received signal", "signal", sign)
 
-	application.HTTPSrv.Stop()
+	application.HTTPSrv.Stop(ctx)
 
 	log.Info("stopped Task Manager API application")
 }

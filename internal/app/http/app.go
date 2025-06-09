@@ -2,23 +2,32 @@ package httpapp
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
+const shutdownTimeout = 5 * time.Second
+
 type App struct {
-	log  *slog.Logger
-	port int
+	log          *slog.Logger
+	port         int
+	readTimeout  time.Duration
+	writeTimeout time.Duration
+
+	server *http.Server
 }
 
 func New(
 	_ context.Context,
 	log *slog.Logger,
 	port int,
+	readTimeout time.Duration,
+	writeTimeout time.Duration,
 ) *App {
 	return &App{
 		log:  log,
@@ -28,7 +37,8 @@ func New(
 
 // MustRun starts the HTTP server and panics if it fails to start.
 func (a *App) MustRun() {
-	if err := a.Run(); err != nil {
+	err := a.Run()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic("failed to run HTTP server: " + err.Error())
 	}
 }
@@ -38,44 +48,41 @@ func (a *App) Run() error {
 	const op = "httpapp.Run"
 
 	log := a.log.With(
-		slog.String("op", op), slog.Int("port", a.port))
+		slog.String("op", op),
+		slog.Int("port", a.port),
+	)
 
 	log.Info("Starting HTTP server")
 
-	srv, err := a.initHTTPServer()
-	if err != nil {
-		log.Error("Failed to initialize HTTP server", slog.Any("error", err))
-		return err
-	}
-
-	return srv.Run(":" + strconv.Itoa(a.port))
-}
-
-func (a *App) initHTTPServer() (*gin.Engine, error) {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
-	for {
-		for _, x := range "-\\|/" {
-			time.Sleep(300 * time.Millisecond)
-			fmt.Printf("\b%s", string(x))
-		}
+	srv := &http.Server{
+		Addr:         ":" + strconv.Itoa(a.port),
+		Handler:      router,
+		ReadTimeout:  a.readTimeout,
+		WriteTimeout: a.writeTimeout,
 	}
+	a.server = srv
 
-	// router.GET("/example", exampleHandler)
-
-	return router, nil
+	return srv.ListenAndServe()
 }
 
 // Stop gracefully stops the HTTP server.
-func (a *App) Stop() {
+func (a *App) Stop(ctx context.Context) {
 	const op = "httpapp.Stop"
 
 	log := a.log.With(slog.String("op", op))
 
-	log.Info("Stopping HTTP server ...")
+	log.Info("Stopping HTTP server")
 
-	// graceful server shutdown here
+	ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
+	defer cancel()
 
-	log.Info("HTTP server stopped")
+	// Shutdown stops receiving new requests and waits for existing requests to finish.
+	if err := a.server.Shutdown(ctx); err != nil {
+		log.Error("Failed to gracefully stop HTTP server", slog.Any("error", err))
+	} else {
+		log.Info("HTTP server stopped gracefully")
+	}
 }

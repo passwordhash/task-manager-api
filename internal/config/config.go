@@ -3,17 +3,20 @@ package config
 import (
 	"flag"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
+	Env string    `env:"ENV" yaml:"env" env-required:"true"`
 	App AppConfig `yaml:"app"`
 }
 
 type AppConfig struct {
-	Env  string `env:"ENV" yaml:"env" env-required:"true"`
-	Port int    `env:"PORT" yaml:"port" env-required:"true"`
+	Port         int           `env:"PORT" yaml:"port" env-required:"true"`
+	WriteTimeout time.Duration `env:"WRITE_TIMEOUT" yaml:"write_timeout" env-default:"10"`
+	ReadTimeout  time.Duration `env:"READ_TIMEOUT" yaml:"read_timeout" env-default:"10"`
 }
 
 // MustLoad загружает конфигурацию из файла, путь к которому указан в флаге `config`

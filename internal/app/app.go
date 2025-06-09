@@ -21,6 +21,8 @@ func New(
 		ctx,
 		log,
 		cfg.App.Port,
+		cfg.App.WriteTimeout,
+		cfg.App.ReadTimeout,
 	)
 
 	return &App{

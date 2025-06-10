@@ -42,8 +42,6 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 		Status:    domain.StatusPending,
 	}
 
-	log = log.With(slog.String("task_uuid", task.UUID))
-
 	// TODO: move error handling to a separate function
 	err := m.taskStorage.Save(ctx, task)
 	if errors.Is(err, storage.ErrTaskAlreadyExist) {
@@ -55,7 +53,7 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("%s: failed to save task: %v", op, err)
 	}
 
-	log.Info("Mock task created and saved")
+	log.Info("Mock task created and saved", "task", task)
 
 	return taskUUUID, nil
 }

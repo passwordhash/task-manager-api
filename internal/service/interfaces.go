@@ -2,10 +2,16 @@ package service
 
 import (
 	"context"
-
-	"github.com/passwordhash/task-manager-api/internal/domain"
+	"errors"
 )
 
+var (
+	// ErrTaskAlreadyExist is returned when a task with the same UUID already exists.
+	ErrTaskAlreadyExist = errors.New("task with the same UUID already exists")
+)
+
+// TaskService defines the interface for task-related operations.
 type TaskService interface {
-	CreateTask(ctx context.Context, task *domain.Task) (uuid string, err error)
+	// CreateTask creates a new task with status [domain.StatusPending] and returns its UUID.
+	CreateTask(ctx context.Context) (uuid string, err error)
 }

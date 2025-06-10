@@ -2,25 +2,33 @@ package task
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/passwordhash/task-manager-api/internal/domain"
 	"github.com/passwordhash/task-manager-api/internal/service"
+	"github.com/passwordhash/task-manager-api/internal/storage"
 )
 
 type simulatedTaskService struct {
-	log *slog.Logger
+	log         *slog.Logger
+	taskStorage storage.Task
 }
 
-func NewMockTaskService(log *slog.Logger) service.TaskService {
+func NewSimulatesTaskService(
+    log *slog.Logger,
+    taskStorage storage.Task,
+) service.TaskService {
 	return &simulatedTaskService{
-		log: log,
+		log:         log,
+		taskStorage: taskStorage,
 	}
 }
 
-func (m *simulatedTaskService) CreateTask(_ context.Context) (string, error) {
+func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 	const op = "MockTaskService.CreateTask"
 
 	log := m.log.With(slog.String("op", op))
@@ -34,9 +42,20 @@ func (m *simulatedTaskService) CreateTask(_ context.Context) (string, error) {
 		Status:    domain.StatusPending,
 	}
 
-	log.Info("Mock task created", slog.String("task_uuid", task.UUID))
+	log = log.With(slog.String("task_uuid", task.UUID))
 
-	// TODO: save task
+	// TODO: move error handling to a separate function
+	err := m.taskStorage.Save(ctx, task)
+	if errors.Is(err, storage.ErrTaskAlreadyExist) {
+		log.Error("Task with the same UUID already exists")
+		return "", fmt.Errorf("%s: %w", op, service.ErrTaskAlreadyExist)
+	}
+	if err != nil {
+		log.Error("Failed to save task", slog.Any("error", err))
+		return "", fmt.Errorf("%s: failed to save task: %v", op, err)
+	}
+
+	log.Info("Mock task created and saved")
 
 	return taskUUUID, nil
 }

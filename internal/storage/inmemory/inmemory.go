@@ -15,13 +15,15 @@ type taskStorage struct {
 	tasks map[string]*storageModel.Task
 }
 
-func New() storage.Task {
+func NewTaskStorage() storage.Task {
 	return &taskStorage{
 		tasks: make(map[string]*storageModel.Task),
 	}
 }
 
 func (t *taskStorage) Save(_ context.Context, task domain.Task) error {
+	// Maybe we should handle ctx.Done here?
+
 	const op = "storage.Save"
 
 	t.mu.Lock()

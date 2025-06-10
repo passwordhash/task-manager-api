@@ -7,6 +7,7 @@ import (
 	httpapp "github.com/passwordhash/task-manager-api/internal/app/http"
 	"github.com/passwordhash/task-manager-api/internal/config"
 	"github.com/passwordhash/task-manager-api/internal/service/task"
+	"github.com/passwordhash/task-manager-api/internal/storage/inmemory"
 )
 
 type App struct {
@@ -18,7 +19,9 @@ func New(
 	log *slog.Logger,
 	cfg *config.Config,
 ) *App {
-	taskService := task.NewMockTaskService(log)
+	taskStorage := inmemory.NewTaskStorage()
+
+	taskService := task.NewSimulatesTaskService(log, taskStorage)
 
 	httpApp := httpapp.New(
 		ctx,

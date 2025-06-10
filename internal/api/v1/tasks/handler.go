@@ -7,7 +7,7 @@ import (
 )
 
 type TaskManager interface {
-	Run(ctx context.Context)
+	CreateTask(ctx context.Context) (taskUUID string, err error)
 }
 
 type handler struct {
@@ -25,6 +25,6 @@ func NewHandler(
 func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	tasksGroup := router.Group("/tasks")
 	{
-		tasksGroup.POST("/run", h.run)
+		tasksGroup.POST("/create", h.create)
 	}
 }

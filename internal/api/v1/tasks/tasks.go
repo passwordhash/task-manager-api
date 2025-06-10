@@ -7,13 +7,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) run(c *gin.Context) {
+type createTaskResponse struct {
+	TaskUUID string `json:"task_uuid"`
+}
+
+func (h *handler) create(c *gin.Context) {
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
-	h.taskManager.Run(ctx)
+	uuid, err := h.taskManager.CreateTask(ctx)
+	// TODO: handle error properly
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to create task",
+		})
+		return
+	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "success",
+	c.JSON(http.StatusOK, createTaskResponse{
+		TaskUUID: uuid,
 	})
 }

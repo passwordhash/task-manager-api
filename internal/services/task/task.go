@@ -2,9 +2,11 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/passwordhash/task-manager-api/internal/domain/model"
 )
 
 type SimulatedTaskService struct {
@@ -17,17 +19,23 @@ func NewMockTaskService(log *slog.Logger) *SimulatedTaskService {
 	}
 }
 
-func (m *SimulatedTaskService) Run(ctx context.Context) {
-	const op = "MockTaskService.Run"
+func (m *SimulatedTaskService) CreateTask(_ context.Context) (string, error) {
+	const op = "MockTaskService.CreateTask"
 
 	log := m.log.With(slog.String("op", op))
 
-	log.InfoContext(ctx, "Running mock task")
-	// TOOD: Implement the mock task running logic
-	for {
-		for _, x := range "-\\|/" {
-			fmt.Printf("\r%s", string(x))
-			time.Sleep(300 * time.Millisecond)
-		}
+	log.Info("Creating a mock task")
+
+	taskUUUID := uuid.NewString()
+	task := model.Task{
+		UUID:      taskUUUID,
+		CreatedAt: time.Now(),
+		Status:    model.StatusPending,
 	}
+
+	log.Info("Mock task created", slog.String("task_uuid", task.UUID))
+
+	// TODO: save task
+
+	return taskUUUID, nil
 }

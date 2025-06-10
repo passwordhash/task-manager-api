@@ -15,7 +15,7 @@ func (h *handler) create(c *gin.Context) {
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
-	uuid, err := h.taskManager.CreateTask(ctx)
+	uuid, err := h.taskService.CreateTask(ctx)
 	// TODO: handle error properly
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

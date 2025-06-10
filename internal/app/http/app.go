@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	tasks "github.com/passwordhash/task-manager-api/internal/api/v1/tasks"
+	"github.com/passwordhash/task-manager-api/internal/service"
 )
 
 const shutdownTimeout = 5 * time.Second
@@ -17,7 +18,7 @@ const shutdownTimeout = 5 * time.Second
 type App struct {
 	log         *slog.Logger
 	port        int
-	taskManager tasks.TaskManager
+	taskManager service.TaskService
 
 	readTimeout  time.Duration
 	writeTimeout time.Duration
@@ -28,7 +29,7 @@ type App struct {
 func New(
 	_ context.Context,
 	log *slog.Logger,
-	taskManager tasks.TaskManager,
+	taskManager service.TaskService,
 	port int,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,

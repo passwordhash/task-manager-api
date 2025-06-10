@@ -1,24 +1,19 @@
 package tasks
 
 import (
-	"context"
-
 	"github.com/gin-gonic/gin"
+	"github.com/passwordhash/task-manager-api/internal/service"
 )
 
-type TaskManager interface {
-	CreateTask(ctx context.Context) (taskUUID string, err error)
-}
-
 type handler struct {
-	taskManager TaskManager
+	taskService service.TaskService
 }
 
 func NewHandler(
-	taskRunner TaskManager,
+	taskService service.TaskService,
 ) *handler {
 	return &handler{
-		taskManager: taskRunner,
+		taskService: taskService,
 	}
 }
 

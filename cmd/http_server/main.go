@@ -1,17 +1,18 @@
 package main
 
 import (
-	"context"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/passwordhash/task-manager-api/internal/app"
 	"github.com/passwordhash/task-manager-api/internal/config"
+	"golang.org/x/net/context"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
+	defer cancel()
 
 	cfg := config.MustLoad()
 
@@ -21,12 +22,9 @@ func main() {
 
 	go application.HTTPSrv.MustRun(ctx)
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
+	<-ctx.Done()
 
-	sign := <-stop
-
-	log.Info("received signal", "signal", sign)
+	log.Info("received signal stop signal")
 
 	application.HTTPSrv.Stop(ctx)
 

@@ -1,4 +1,8 @@
-package worker
+package pool
+
+// Package pool implements a worker pool that manages a set of workers
+// to execute tasks concurrently. It provides methods to start the pool,
+// submit tasks, and stop the pool gracefully.
 
 import (
 	"context"
@@ -7,26 +11,23 @@ import (
 	"sync"
 
 	"github.com/passwordhash/task-manager-api/internal/domain"
+	"github.com/passwordhash/task-manager-api/internal/worker"
 )
-
-type TaskExecutor interface {
-	Execute(ctx context.Context, task *domain.Task) error
-}
 
 type pool struct {
 	log       *slog.Logger
 	workers   int
 	taskQueue chan *domain.Task
 	wg        sync.WaitGroup
-	executor  TaskExecutor
+	executor  worker.TaskExecutor
 }
 
-func NewPool(
+func New(
 	log *slog.Logger,
 	queueSize,
 	workers int,
-	executor TaskExecutor,
-) TaskPool {
+	executor worker.TaskExecutor,
+) worker.TaskPool {
 	return &pool{
 		log:       log,
 		workers:   workers,
@@ -90,7 +91,7 @@ func (p *pool) Stop(ctx context.Context) error {
 func (p *pool) worker(ctx context.Context, id int) {
 	defer p.wg.Done()
 
-	const op = "workerpool.worker"
+	const op = "workerpool.pool"
 
 	log := p.log.With(slog.String("op", op), slog.Int("worker_id", id))
 
@@ -100,7 +101,7 @@ func (p *pool) worker(ctx context.Context, id int) {
 		select {
 		case task, ok := <-p.taskQueue:
 			if !ok {
-				log.Debug("Task queue closed, stopping worker")
+				log.Debug("Task queue closed, stopping pool")
 				return
 			}
 

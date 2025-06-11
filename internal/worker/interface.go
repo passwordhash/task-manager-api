@@ -15,7 +15,11 @@ type TaskPool interface {
 	// Submit adds a task to the pool for execution.
 	Submit(ctx context.Context, task *domain.Task) error
 
-	// Stop gracefully stops the worker pool, waiting for all tasks to complete
+	// Stop gracefully stops the pool pool, waiting for all tasks to complete
 	// or the context to be done.
 	Stop(ctx context.Context) error
+}
+
+type TaskExecutor interface {
+	Execute(ctx context.Context, task *domain.Task) error
 }

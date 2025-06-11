@@ -63,7 +63,7 @@ func (a *App) Run(ctx context.Context) error {
 		slog.Int("port", a.port),
 	)
 
-	log.Info("Starting task worker pool")
+	log.Info("Starting task pool pool")
 
 	a.taskPool.Start(ctx)
 

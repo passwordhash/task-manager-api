@@ -11,15 +11,17 @@ import (
 	"github.com/gin-gonic/gin"
 	tasks "github.com/passwordhash/task-manager-api/internal/api/v1/tasks"
 	"github.com/passwordhash/task-manager-api/internal/service"
+	"github.com/passwordhash/task-manager-api/internal/worker"
 )
 
 const shutdownTimeout = 5 * time.Second
 
 type App struct {
 	log         *slog.Logger
-	port        int
+	taskPool    worker.TaskPool
 	taskManager service.TaskService
 
+	port         int
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 
@@ -27,8 +29,8 @@ type App struct {
 }
 
 func New(
-	_ context.Context,
 	log *slog.Logger,
+	taskPool worker.TaskPool,
 	taskManager service.TaskService,
 	port int,
 	readTimeout time.Duration,
@@ -36,29 +38,34 @@ func New(
 ) *App {
 	return &App{
 		log:          log,
-		port:         port,
+		taskPool:     taskPool,
 		taskManager:  taskManager,
+		port:         port,
 		readTimeout:  readTimeout,
 		writeTimeout: writeTimeout,
 	}
 }
 
 // MustRun starts the HTTP server and panics if it fails to start.
-func (a *App) MustRun() {
-	err := a.Run()
+func (a *App) MustRun(ctx context.Context) {
+	err := a.Run(ctx)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic("failed to run HTTP server: " + err.Error())
 	}
 }
 
 // Run starts the HTTP server and listens on the specified port.
-func (a *App) Run() error {
+func (a *App) Run(ctx context.Context) error {
 	const op = "httpapp.Run"
 
 	log := a.log.With(
 		slog.String("op", op),
 		slog.Int("port", a.port),
 	)
+
+	log.Info("Starting task worker pool")
+
+	a.taskPool.Start(ctx)
 
 	log.Info("Starting HTTP server")
 
@@ -93,6 +100,8 @@ func (a *App) Stop(ctx context.Context) {
 
 	ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
 	defer cancel()
+
+	a.taskPool.Stop(ctx) // TODO: log
 
 	// Shutdown stops receiving new requests and waits for existing requests to finish.
 	if err := a.server.Shutdown(ctx); err != nil {

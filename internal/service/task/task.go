@@ -11,20 +11,24 @@ import (
 	"github.com/passwordhash/task-manager-api/internal/domain"
 	"github.com/passwordhash/task-manager-api/internal/service"
 	"github.com/passwordhash/task-manager-api/internal/storage"
+	"github.com/passwordhash/task-manager-api/internal/worker"
 )
 
 type simulatedTaskService struct {
-	log         *slog.Logger
-	taskStorage storage.Task
+	log        *slog.Logger
+	workerPool worker.TaskPool
+	storage    storage.Task
 }
 
-func NewSimulatesTaskService(
+func NewSimulatedTaskService(
 	log *slog.Logger,
-	taskStorage storage.Task,
+	workerPool worker.TaskPool,
+	storage storage.Task,
 ) service.TaskService {
 	return &simulatedTaskService{
-		log:         log,
-		taskStorage: taskStorage,
+		log:        log,
+		workerPool: workerPool,
+		storage:    storage,
 	}
 }
 
@@ -43,7 +47,7 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 	}
 
 	// TODO: move error handling to a separate function
-	err := m.taskStorage.Save(ctx, task)
+	err := m.storage.Save(ctx, task)
 	if errors.Is(err, storage.ErrTaskAlreadyExist) {
 		log.Error("Task with the same UUID already exists")
 		return "", fmt.Errorf("%s: %w", op, service.ErrTaskAlreadyExist)
@@ -52,6 +56,8 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 		log.Error("Failed to save task", slog.Any("error", err))
 		return "", fmt.Errorf("%s: failed to save task: %v", op, err)
 	}
+
+	m.workerPool.Submit(ctx, &task)
 
 	log.Info("Mock task created and saved", "task", task)
 

@@ -19,7 +19,7 @@ func main() {
 
 	application := app.New(ctx, log, cfg)
 
-	go application.HTTPSrv.MustRun()
+	go application.HTTPSrv.MustRun(ctx)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)

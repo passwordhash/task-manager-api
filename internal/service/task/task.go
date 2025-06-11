@@ -19,8 +19,8 @@ type simulatedTaskService struct {
 }
 
 func NewSimulatesTaskService(
-    log *slog.Logger,
-    taskStorage storage.Task,
+	log *slog.Logger,
+	taskStorage storage.Task,
 ) service.TaskService {
 	return &simulatedTaskService{
 		log:         log,

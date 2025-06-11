@@ -2,8 +2,13 @@ package storage
 
 import (
 	"context"
+	"errors"
 
 	"github.com/passwordhash/task-manager-api/internal/domain"
+)
+
+var (
+	ErrTaskAlreadyExist = errors.New("task already exists")
 )
 
 // Task defines the interface for task storage operations.

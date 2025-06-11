@@ -20,7 +20,7 @@ func New(log *slog.Logger) *simulateIOExecutor {
 	}
 }
 
-func (e *simulateIOExecutor) Execute(_ context.Context, task *domain.Task) error {
+func (e *simulateIOExecutor) Execute(_ context.Context, task *domain.Task) (time.Time, error) {
 	const op = "executor.Execute"
 
 	log := e.log.With(slog.String("op", op), slog.String("task_uuid", task.UUID))
@@ -28,8 +28,9 @@ func (e *simulateIOExecutor) Execute(_ context.Context, task *domain.Task) error
 	log.Debug("Starting task execution")
 
 	time.Sleep(ioDuration)
+	finishedAt := time.Now()
 
 	log.Debug("Task execution completed", slog.String("task_uuid", task.UUID))
 
-	return nil
+	return finishedAt, nil
 }

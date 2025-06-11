@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"time"
 
 	"github.com/passwordhash/task-manager-api/internal/domain"
 )
@@ -23,5 +24,5 @@ type TaskPool interface {
 // TaskExecutor defines the interface for executing tasks.
 type TaskExecutor interface {
 	// Execute runs i/ob-bound operation.
-	Execute(ctx context.Context, task *domain.Task) error
+	Execute(ctx context.Context, task *domain.Task) (finishedAt time.Time, error error)
 }

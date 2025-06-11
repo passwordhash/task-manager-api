@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/passwordhash/task-manager-api/internal/domain"
 )
@@ -22,5 +23,9 @@ type Task interface {
 	// it returns an [ErrNotFound]. Thread safety is guaranteed.
 	Get(ctx context.Context, uuid string) (task domain.Task, err error)
 
-	Update(ctx context.Context, task domain.Task) (err error)
+	UpdateStatus(ctx context.Context,
+		uuid string,
+		status domain.TaskStatus,
+		updatedAt time.Time,
+	) error
 }

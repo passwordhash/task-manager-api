@@ -111,25 +111,24 @@ func (p *pool) worker(ctx context.Context, id int) {
 				return
 			}
 
-			task.Status = domain.StatusRunning
-			task.UpdatedAt = time.Now()
-			_ = p.taskStorage.Update(ctx, *task)
+			_ = p.taskStorage.UpdateStatus(ctx, task.UUID, domain.StatusPending, time.Now())
 			// TODO: error handling
 
-			err := p.executor.Execute(ctx, task)
+			var status domain.TaskStatus
+			updatedAt, err := p.executor.Execute(ctx, task)
 			if err != nil {
 				log.Error(
 					"Failed to execute task",
 					slog.String("task_uuid", task.UUID),
 					slog.String("error", err.Error()),
 				)
-				task.Status = domain.StatusFailed
+				status = domain.StatusFailed
 			} else {
 				log.Debug("Task executed successfully", slog.String("task_uuid", task.UUID))
-				task.Status = domain.StatusCompleted
+				status = domain.StatusCompleted
 			}
-			task.UpdatedAt = time.Now()
-			_ = p.taskStorage.Update(ctx, *task)
+
+			_ = p.taskStorage.UpdateStatus(ctx, task.UUID, status, updatedAt)
 			// TODO: error handling
 		case <-ctx.Done():
 			log.Debug("Worker stopped")

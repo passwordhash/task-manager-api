@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/passwordhash/task-manager-api/internal/domain"
 	"github.com/passwordhash/task-manager-api/internal/storage"
@@ -57,19 +58,24 @@ func (t *taskStorage) Get(_ context.Context, uuid string) (domain.Task, error) {
 	return task.ToDomain(), nil
 }
 
-func (t *taskStorage) Update(_ context.Context, task domain.Task) error {
+func (t *taskStorage) UpdateStatus(
+	_ context.Context,
+	key string,
+	status domain.TaskStatus,
+	updatedAt time.Time,
+) error {
 	const op = "taskstorage.Update"
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	_, exists := t.tasks[task.UUID]
+	task, exists := t.tasks[key]
 	if !exists {
 		return fmt.Errorf("%s: %w", op, storage.ErrNotFound)
 	}
 
-	storageTask := model.FromDomainToTask(task)
-	t.tasks[task.UUID] = storageTask
+	task.Status = string(status)
+	task.UpdatedAt = updatedAt
 
 	return nil
 }

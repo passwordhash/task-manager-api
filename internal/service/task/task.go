@@ -48,7 +48,7 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 
 	// TODO: move error handling to a separate function
 	err := m.storage.Save(ctx, task)
-	if errors.Is(err, storage.ErrTaskAlreadyExist) {
+	if errors.Is(err, storage.ErrAlreadyExists) {
 		log.Error("Task with the same UUID already exists")
 		return "", fmt.Errorf("%s: %w", op, service.ErrTaskAlreadyExist)
 	}

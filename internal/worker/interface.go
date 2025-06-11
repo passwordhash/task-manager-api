@@ -20,6 +20,8 @@ type TaskPool interface {
 	Stop(ctx context.Context) error
 }
 
+// TaskExecutor defines the interface for executing tasks.
 type TaskExecutor interface {
+	// Execute runs i/ob-bound operation.
 	Execute(ctx context.Context, task *domain.Task) error
 }

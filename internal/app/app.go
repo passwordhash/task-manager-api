@@ -7,6 +7,7 @@ import (
 	"github.com/passwordhash/task-manager-api/internal/config"
 	"github.com/passwordhash/task-manager-api/internal/service/task"
 	"github.com/passwordhash/task-manager-api/internal/storage/inmemory"
+	"github.com/passwordhash/task-manager-api/internal/worker/executor"
 	"github.com/passwordhash/task-manager-api/internal/worker/pool"
 )
 
@@ -20,11 +21,14 @@ func New(
 ) *App {
 	taskStorage := inmemory.NewTaskStorage()
 
+	exec := executor.New(log.WithGroup("executor"))
+
 	workerPool := pool.New(
 		log.WithGroup("pool"),
 		100, // TODO: make configurable
 		3,   // TODO: make configurable
-		nil, // TODO: make configurable
+		exec,
+		taskStorage,
 	)
 
 	taskService := task.NewSimulatedTaskService(

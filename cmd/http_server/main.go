@@ -27,7 +27,7 @@ func main() {
 
 	log := config.SetupLogger(cfg.Env)
 
-	application := app.New(ctx, log, cfg)
+	application := app.New(log, cfg)
 
 	go application.HTTPSrv.MustRun(ctx)
 

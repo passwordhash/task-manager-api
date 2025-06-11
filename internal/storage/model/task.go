@@ -12,6 +12,14 @@ type Task struct {
 	UpdatedAt time.Time
 }
 
+func (task *Task) ToDomain() domain.Task {
+	return domain.Task{
+		Status:    domain.TaskStatus(task.Status),
+		CreatedAt: task.CreatedAt,
+		UpdatedAt: task.UpdatedAt,
+	}
+}
+
 func FromDomainToTask(task domain.Task) *Task {
 	return &Task{
 		Status:    string(task.Status),

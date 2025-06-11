@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/passwordhash/task-manager-api/internal/domain"
+	"github.com/passwordhash/task-manager-api/internal/storage"
 	"github.com/passwordhash/task-manager-api/internal/worker"
 )
 
@@ -19,7 +21,9 @@ type pool struct {
 	workers   int
 	taskQueue chan *domain.Task
 	wg        sync.WaitGroup
-	executor  worker.TaskExecutor
+
+	executor    worker.TaskExecutor
+	taskStorage storage.Task
 }
 
 func New(
@@ -27,12 +31,14 @@ func New(
 	queueSize,
 	workers int,
 	executor worker.TaskExecutor,
+	taskStorage storage.Task,
 ) worker.TaskPool {
 	return &pool{
-		log:       log,
-		workers:   workers,
-		taskQueue: make(chan *domain.Task, queueSize),
-		executor:  executor,
+		log:         log,
+		workers:     workers,
+		taskQueue:   make(chan *domain.Task, queueSize),
+		executor:    executor,
+		taskStorage: taskStorage,
 	}
 }
 
@@ -105,7 +111,26 @@ func (p *pool) worker(ctx context.Context, id int) {
 				return
 			}
 
-			p.executor.Execute(ctx, task)
+			task.Status = domain.StatusRunning
+			task.UpdatedAt = time.Now()
+			_ = p.taskStorage.Update(ctx, *task)
+			// TODO: error handling
+
+			err := p.executor.Execute(ctx, task)
+			if err != nil {
+				log.Error(
+					"Failed to execute task",
+					slog.String("task_uuid", task.UUID),
+					slog.String("error", err.Error()),
+				)
+				task.Status = domain.StatusFailed
+			} else {
+				log.Debug("Task executed successfully", slog.String("task_uuid", task.UUID))
+				task.Status = domain.StatusCompleted
+			}
+			task.UpdatedAt = time.Now()
+			_ = p.taskStorage.Update(ctx, *task)
+			// TODO: error handling
 		case <-ctx.Done():
 			log.Debug("Worker stopped")
 			return

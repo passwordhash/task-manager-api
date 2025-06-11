@@ -25,8 +25,8 @@ func New(
 
 	workerPool := pool.New(
 		log.WithGroup("pool"),
-		100, // TODO: make configurable
-		3,   // TODO: make configurable
+		cfg.App.Workers,
+		cfg.App.TaskQueueSize,
 		exec,
 		taskStorage,
 	)
@@ -41,9 +41,9 @@ func New(
 		log,
 		workerPool,
 		taskService,
-		cfg.App.Port,
-		cfg.App.ReadTimeout,
-		cfg.App.WriteTimeout,
+		cfg.HTTP.Port,
+		cfg.HTTP.ReadTimeout,
+		cfg.HTTP.WriteTimeout,
 	)
 
 	return &App{

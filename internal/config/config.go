@@ -11,11 +11,17 @@ import (
 )
 
 type Config struct {
-	Env string    `env:"ENV" yaml:"env" env-required:"true"`
-	App AppConfig `yaml:"app"`
+	App  AppConfig  `yaml:"app"`
+	HTTP HTTPConfig `yaml:"http"`
 }
 
 type AppConfig struct {
+	Env           string `env:"ENV" yaml:"env" env-required:"true"`
+	Workers       int    `env:"WORKERS" yaml:"workers" env-required:"true"`
+	TaskQueueSize int    `env:"TASK_QUEUE_SIZE" yaml:"task_queue_size" env-required:"true"`
+}
+
+type HTTPConfig struct {
 	Port         int           `env:"PORT" yaml:"port" env-required:"true"`
 	WriteTimeout time.Duration `env:"WRITE_TIMEOUT" yaml:"write_timeout" env-default:"10"`
 	ReadTimeout  time.Duration `env:"READ_TIMEOUT" yaml:"read_timeout" env-default:"10"`

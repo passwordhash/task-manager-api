@@ -25,7 +25,7 @@ func main() {
 
 	cfg := config.MustLoad()
 
-	log := config.SetupLogger(cfg.Env)
+	log := config.SetupLogger(cfg.App.Env)
 
 	application := app.New(log, cfg)
 

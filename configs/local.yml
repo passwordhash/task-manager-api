@@ -1,6 +1,9 @@
-env: dev
-
 app:
+    env: dev
+    workers: 5
+    task_queue_size: 100
+
+http:
     port: 8080
     write_timeout: 5s
     read_timeout: 5s

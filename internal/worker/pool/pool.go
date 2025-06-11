@@ -27,11 +27,11 @@ type pool struct {
 }
 
 func New(
-	log *slog.Logger,
-	queueSize,
-	workers int,
-	executor worker.TaskExecutor,
-	taskStorage storage.Task,
+    log *slog.Logger,
+    workers int,
+    queueSize int,
+    executor worker.TaskExecutor,
+    taskStorage storage.Task,
 ) worker.TaskPool {
 	return &pool{
 		log:         log,

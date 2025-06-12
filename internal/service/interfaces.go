@@ -14,9 +14,9 @@ var (
 	// ErrAlreadyExist is returned when a task with the same UUID already exists.
 	ErrAlreadyExist = errors.New("entity already exists")
 
-	// ErrCantBeCancelled is returned when a task cannot be cancelled, for example,
-	// if it is already completed or cancelled.
-	ErrCantBeCancelled = errors.New("task cannot be cancelled")
+	// ErrCantCancel is returned when a task cannot be canceled, for example,
+	// if it is already completed or canceled.
+	ErrCantCancel = errors.New("task cannot be canceled")
 )
 
 // TaskService defines the interface for task-related operations.
@@ -28,8 +28,8 @@ type TaskService interface {
 	GetAll(ctx context.Context) (tasks []domain.Task, err error)
 
 	// Cancel cancels a task with the specified UUID.
-	// Return ErrNotFound if the task does not exist,
-	// ErrCantBeCancelled if the task cannot be cancelled
+	// Return [ErrNotFound] if the task does not exist,
+	// [ErrCantCancel] if the task cannot be canceled
 	// or some internal error.
 	Cancel(ctx context.Context, uuid string) error
 }

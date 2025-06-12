@@ -2,9 +2,12 @@ package tasks
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/passwordhash/task-manager-api/internal/api/v1/response"
+	"github.com/passwordhash/task-manager-api/internal/service"
 )
 
 type createTaskResponse struct {
@@ -16,17 +19,11 @@ func (h *handler) create(c *gin.Context) {
 	defer cancel()
 
 	uuid, err := h.taskService.CreateTask(ctx)
-	// TODO: handle error properly
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to create task",
-		})
+	if response.HandleError(c, err) {
 		return
 	}
 
-	c.JSON(http.StatusOK, createTaskResponse{
-		TaskUUID: uuid,
-	})
+	response.NewOk(c, createTaskResponse{TaskUUID: uuid})
 }
 
 type task struct {
@@ -40,10 +37,7 @@ type listTasksResponse struct {
 
 func (h *handler) list(c *gin.Context) {
 	tasks, err := h.taskService.GetAll(c)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to list tasks",
-		})
+	if response.HandleError(c, err) {
 		return
 	}
 
@@ -55,29 +49,27 @@ func (h *handler) list(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, listTasksResponse{
-		Tasks: respTasks,
-	})
+	response.NewOk(c, listTasksResponse{Tasks: respTasks})
 }
 
 func (h *handler) cancel(c *gin.Context) {
 	uuid := c.Param("uuid")
 	if uuid == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "task UUID is required",
-		})
+		response.NewErr(c, http.StatusBadRequest, response.ErrBadRequestParams, "Task UUID is required")
 		return
 	}
 
 	err := h.taskService.Cancel(c, uuid)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to cancel task",
-		})
+	if errors.Is(err, service.ErrNotFound) {
+		response.NewErr(c, http.StatusNotFound, response.ErrNotFound, "Task not found")
+		return
+	}
+	if errors.Is(err, service.ErrCantCancel) {
+		response.NewErr(c, http.StatusConflict, errors.New("cant_be_canceled"), "Task cannot be cancelled because it is already completed or cancelled")
+	}
+	if response.HandleError(c, err) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "task cancelled successfully",
-	})
+	response.NewOk(c, response.Message{Message: "Task cancelled successfully"})
 }

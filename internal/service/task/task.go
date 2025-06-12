@@ -21,9 +21,9 @@ type simulatedTaskService struct {
 }
 
 func NewSimulatedTaskService(
-    log *slog.Logger,
-    workerPool worker.TaskPool,
-    storage storage.Task,
+	log *slog.Logger,
+	workerPool worker.TaskPool,
+	storage storage.Task,
 ) service.TaskService {
 	return &simulatedTaskService{
 		log:        log,
@@ -83,7 +83,7 @@ func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
 
 	if task.Status == domain.StatusCompleted || task.Status == domain.StatusCancelled {
 		log.Warn("Task is already completed or cancelled", slog.Any("task_status", task.Status))
-		return fmt.Errorf("%s: %w", op, service.ErrCantBeCancelled)
+		return fmt.Errorf("%s: %w", op, service.ErrCantCancel)
 	}
 
 	if err := m.workerPool.Cancel(ctx, uuid); err != nil {

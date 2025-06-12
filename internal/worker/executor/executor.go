@@ -2,13 +2,18 @@ package executor
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"time"
 
 	"github.com/passwordhash/task-manager-api/internal/domain"
 )
 
-const ioDuration = 100 * time.Second
+var ioDuration time.Duration
+
+func init() {
+	flag.DurationVar(&ioDuration, "io-duration", 10*time.Second, "Duration to simulate I/O operation in the executor")
+}
 
 type simulateIOExecutor struct {
 	log *slog.Logger
@@ -20,7 +25,7 @@ func New(log *slog.Logger) *simulateIOExecutor {
 	}
 }
 
-func (e *simulateIOExecutor) Execute(_ context.Context, task *domain.Task) (time.Time, error) {
+func (e *simulateIOExecutor) Execute(ctx context.Context, task *domain.Task) (time.Time, error) {
 	const op = "executor.Execute"
 
 	log := e.log.With(slog.String("op", op), slog.String("task_uuid", task.UUID))
@@ -33,21 +38,15 @@ func (e *simulateIOExecutor) Execute(_ context.Context, task *domain.Task) (time
 		close(done)
 	}()
 
-	go func() {
-		for {
-			select {
-			case <-task.Cancel:
-				log.Debug("Task execution cancelled", slog.String("task_uuid", task.UUID))
-				return
-			case <-done:
-			}
-		}
-	}()
+	select {
+	case <-ctx.Done():
+		log.Debug("Task execution cancelled", slog.String("task_uuid", task.UUID))
+		return time.Time{}, ctx.Err()
+	case <-done:
+		finishedAt := time.Now()
 
-	<-done
-	finishedAt := time.Now()
+		log.Debug("Task execution completed", slog.String("task_uuid", task.UUID))
 
-	log.Debug("Task execution completed", slog.String("task_uuid", task.UUID))
-
-	return finishedAt, nil
+		return finishedAt, nil
+	}
 }

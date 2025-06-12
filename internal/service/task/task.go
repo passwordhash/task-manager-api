@@ -21,9 +21,9 @@ type simulatedTaskService struct {
 }
 
 func NewSimulatedTaskService(
-	log *slog.Logger,
-	workerPool worker.TaskPool,
-	storage storage.Task,
+    log *slog.Logger,
+    workerPool worker.TaskPool,
+    storage storage.Task,
 ) service.TaskService {
 	return &simulatedTaskService{
 		log:        log,
@@ -37,8 +37,6 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 
 	log := m.log.With(slog.String("op", op))
 
-	log.Info("Creating a mock task")
-
 	taskUUUID := uuid.NewString()
 	task := domain.Task{
 		UUID:      taskUUUID,
@@ -50,16 +48,17 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 	err := m.storage.Save(ctx, task)
 	if errors.Is(err, storage.ErrAlreadyExists) {
 		log.Error("Task with the same UUID already exists")
-		return "", fmt.Errorf("%s: %w", op, service.ErrTaskAlreadyExist)
+		return "", fmt.Errorf("%s: %w", op, service.ErrAlreadyExist)
 	}
 	if err != nil {
 		log.Error("Failed to save task", slog.Any("error", err))
 		return "", fmt.Errorf("%s: failed to save task: %v", op, err)
 	}
 
-	m.workerPool.Submit(ctx, &task)
+	_ = m.workerPool.Submit(ctx, &task)
+	// TODO: handle worker pool submission errors
 
-	log.Info("Mock task created and saved", "task", task)
+	log.Info("Task created and saved", "task", task)
 
 	return taskUUUID, nil
 }
@@ -69,15 +68,13 @@ func (m *simulatedTaskService) GetAll(ctx context.Context) (tasks []domain.Task,
 
 	log := m.log.With(slog.String("op", op))
 
-	log.Info("Retrieving all mock tasks")
-
 	tasks, err = m.storage.GetAll(ctx)
 	if err != nil {
 		log.Error("Failed to retrieve tasks", slog.Any("error", err))
 		return nil, fmt.Errorf("%s: failed to retrieve tasks: %v", op, err)
 	}
 
-	log.Info("Retrieved all mock tasks successfully", slog.Int("count", len(tasks)))
+	log.Info("Retrieved all tasks", slog.Int("count", len(tasks)))
 
 	return tasks, nil
 }
@@ -87,22 +84,34 @@ func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
 
 	log := m.log.With(slog.String("op", op), slog.String("task_uuid", uuid))
 
-	log.Info("Cancelling mock task")
-
 	task, err := m.storage.Get(ctx, uuid)
 	if err != nil {
-		log.Error("Failed to retrieve task", slog.Any("error", err))
-		return fmt.Errorf("%s: failed to retrieve task: %v", op, err)
+		return m.handleStorageError(op, err)
 	}
 
 	if task.Status == domain.StatusCompleted || task.Status == domain.StatusCancelled {
 		log.Warn("Task is already completed or cancelled", slog.Any("task_status", task.Status))
-		return nil
+		return fmt.Errorf("%s: %w", op, service.ErrCantBeCancelled)
 	}
 
-	task.Cancel <- struct{}{}
+	if err := m.workerPool.Cancel(ctx, uuid); err != nil {
+		log.Error("Failed to cancel task", slog.Any("error", err))
+		return fmt.Errorf("%s: failed to cancel task: %v", op, err)
+	}
 
-	log.Info("Mock task cancelled successfully")
+	log.Info("Task cancelled successfully")
 
 	return nil
+}
+
+// handleStorageError processes storage errors and returns a formatted error message.
+// It checks for specific storage errors like [storage.ErrNotFound] and [storage.ErrAlreadyExists].
+func (m *simulatedTaskService) handleStorageError(op string, err error) error {
+	if errors.Is(err, storage.ErrNotFound) {
+		return fmt.Errorf("%s: task not found: %w", op, service.ErrNotFound)
+	}
+	if errors.Is(err, storage.ErrAlreadyExists) {
+		return fmt.Errorf("%s: task already exists: %w", op, service.ErrAlreadyExist)
+	}
+	return fmt.Errorf("%s: unexpected storage error: %v", op, err)
 }

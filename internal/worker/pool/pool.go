@@ -16,19 +16,22 @@ import (
 	"github.com/passwordhash/task-manager-api/internal/worker"
 )
 
+type taskWrapper struct {
+	task *domain.Task
+	ctx  context.Context
+}
+
 type pool struct {
 	log       *slog.Logger
-	workers   int
-	taskQueue chan *domain.Task
 	wg        sync.WaitGroup
+	workers   int
+	taskQueue chan *taskWrapper
 
 	executor    worker.TaskExecutor
 	taskStorage storage.Task
-}
 
-func (p *pool) Cancel(ctx context.Context, taskID string) error {
-	//TODO implement me
-	panic("implement me")
+	mu         sync.Mutex
+	cancelFunc map[string]context.CancelFunc
 }
 
 func New(
@@ -41,14 +44,15 @@ func New(
 	return &pool{
 		log:         log,
 		workers:     workers,
-		taskQueue:   make(chan *domain.Task, queueSize),
+		taskQueue:   make(chan *taskWrapper, queueSize),
 		executor:    executor,
 		taskStorage: taskStorage,
+		cancelFunc:  make(map[string]context.CancelFunc),
 	}
 }
 
 func (p *pool) Start(ctx context.Context) {
-	const op = "workerpool.Start"
+	const op = "pool.Start"
 
 	log := p.log.With(slog.String("op", op))
 
@@ -62,12 +66,26 @@ func (p *pool) Start(ctx context.Context) {
 }
 
 func (p *pool) Submit(ctx context.Context, task *domain.Task) error {
-	const op = "workerpool.Submit"
+	const op = "pool.Submit"
 
 	log := p.log.With(slog.String("op", op), slog.String("task_uuid", task.UUID))
 
+	if task == nil {
+		return fmt.Errorf("%s: task cannot be nil", op)
+	}
+
+	taskCtx, taskCancel := context.WithCancel(context.Background())
+	p.mu.Lock()
+	p.cancelFunc[task.UUID] = taskCancel
+	p.mu.Unlock()
+
+	tw := &taskWrapper{
+		task: task,
+		ctx:  taskCtx,
+	}
+
 	select {
-	case p.taskQueue <- task:
+	case p.taskQueue <- tw:
 		log.Debug("Task submitted to the queue")
 		return nil
 	case <-ctx.Done():
@@ -76,8 +94,30 @@ func (p *pool) Submit(ctx context.Context, task *domain.Task) error {
 	}
 }
 
+func (p *pool) Cancel(ctx context.Context, taskUUID string) error {
+	const op = "pool.Cancel"
+
+	log := p.log.With(slog.String("op", op), slog.String("task_id", taskUUID))
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	cancelFunc, exists := p.cancelFunc[taskUUID]
+
+	if !exists {
+		return fmt.Errorf("%s: task %s not found in pool", op, taskUUID)
+	}
+
+	cancelFunc()
+
+	log.Debug("Task cancellation requested", slog.String("task_uuid", taskUUID))
+
+	delete(p.cancelFunc, taskUUID)
+
+	return nil
+}
+
 func (p *pool) Stop(ctx context.Context) error {
-	const op = "workerpool.Stop"
+	const op = "pool.Stop"
 
 	log := p.log.With(slog.String("op", op))
 
@@ -102,7 +142,7 @@ func (p *pool) Stop(ctx context.Context) error {
 func (p *pool) worker(ctx context.Context, id int) {
 	defer p.wg.Done()
 
-	const op = "workerpool.pool"
+	const op = "pool.pool"
 
 	log := p.log.With(slog.String("op", op), slog.Int("worker_id", id))
 
@@ -110,30 +150,28 @@ func (p *pool) worker(ctx context.Context, id int) {
 
 	for {
 		select {
-		case task, ok := <-p.taskQueue:
+		case tw, ok := <-p.taskQueue:
 			if !ok {
 				log.Debug("Task queue closed, stopping pool")
 				return
 			}
 
-			_ = p.taskStorage.UpdateStatus(ctx, task.UUID, domain.StatusPending, time.Now())
-			// TODO: error handling
+			wlog := log.With(slog.String("task_uuid", tw.task.UUID))
+
+			_ = p.taskStorage.UpdateStatus(ctx, tw.task.UUID, domain.StatusPending, time.Now())
+			//TODO: error handling
 
 			var status domain.TaskStatus
-			updatedAt, err := p.executor.Execute(ctx, task)
+			updatedAt, err := p.executor.Execute(tw.ctx, tw.task)
 			if err != nil {
-				log.Error(
-					"Failed to execute task",
-					slog.String("task_uuid", task.UUID),
-					slog.String("error", err.Error()),
-				)
+				wlog.Error("Failed to execute task", slog.String("error", err.Error()))
 				status = domain.StatusFailed
 			} else {
-				log.Debug("Task executed successfully", slog.String("task_uuid", task.UUID))
+				wlog.Debug("Task executed successfully")
 				status = domain.StatusCompleted
 			}
 
-			_ = p.taskStorage.UpdateStatus(ctx, task.UUID, status, updatedAt)
+			_ = p.taskStorage.UpdateStatus(ctx, tw.task.UUID, status, updatedAt)
 			// TODO: error handling
 		case <-ctx.Done():
 			log.Debug("Worker stopped")

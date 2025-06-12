@@ -27,8 +27,8 @@ type Task interface {
 	GetAll(ctx context.Context) (tasks []domain.Task, err error)
 
 	UpdateStatus(ctx context.Context,
-	    uuid string,
-	    status domain.TaskStatus,
-	    updatedAt time.Time,
+		uuid string,
+		status domain.TaskStatus,
+		updatedAt time.Time,
 	) error
 }

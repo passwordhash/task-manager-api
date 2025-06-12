@@ -37,22 +37,15 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 
 	log := m.log.With(slog.String("op", op))
 
-	taskUUUID := uuid.NewString()
 	task := domain.Task{
-		UUID:      taskUUUID,
+		UUID:      uuid.NewString(),
 		CreatedAt: time.Now(),
 		Status:    domain.StatusPending,
 	}
 
-	// TODO: move error handling to a separate function
 	err := m.storage.Save(ctx, task)
-	if errors.Is(err, storage.ErrAlreadyExists) {
-		log.Error("Task with the same UUID already exists")
-		return "", fmt.Errorf("%s: %w", op, service.ErrAlreadyExist)
-	}
 	if err != nil {
-		log.Error("Failed to save task", slog.Any("error", err))
-		return "", fmt.Errorf("%s: failed to save task: %v", op, err)
+		return "", m.handleStorageError(log, op, err)
 	}
 
 	_ = m.workerPool.Submit(ctx, &task)
@@ -60,7 +53,7 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 
 	log.Info("Task created and saved", "task", task)
 
-	return taskUUUID, nil
+	return task.UUID, nil
 }
 
 func (m *simulatedTaskService) GetAll(ctx context.Context) (tasks []domain.Task, err error) {
@@ -70,8 +63,7 @@ func (m *simulatedTaskService) GetAll(ctx context.Context) (tasks []domain.Task,
 
 	tasks, err = m.storage.GetAll(ctx)
 	if err != nil {
-		log.Error("Failed to retrieve tasks", slog.Any("error", err))
-		return nil, fmt.Errorf("%s: failed to retrieve tasks: %v", op, err)
+		return nil, m.handleStorageError(log, op, err)
 	}
 
 	log.Info("Retrieved all tasks", slog.Int("count", len(tasks)))
@@ -86,7 +78,7 @@ func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
 
 	task, err := m.storage.Get(ctx, uuid)
 	if err != nil {
-		return m.handleStorageError(op, err)
+		return m.handleStorageError(log, op, err)
 	}
 
 	if task.Status == domain.StatusCompleted || task.Status == domain.StatusCancelled {
@@ -106,12 +98,15 @@ func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
 
 // handleStorageError processes storage errors and returns a formatted error message.
 // It checks for specific storage errors like [storage.ErrNotFound] and [storage.ErrAlreadyExists].
-func (m *simulatedTaskService) handleStorageError(op string, err error) error {
+func (m *simulatedTaskService) handleStorageError(log *slog.Logger, op string, err error) error {
 	if errors.Is(err, storage.ErrNotFound) {
+		log.Warn("Task not found", slog.Any("error", err))
 		return fmt.Errorf("%s: task not found: %w", op, service.ErrNotFound)
 	}
 	if errors.Is(err, storage.ErrAlreadyExists) {
+		log.Warn("Task already exists", slog.Any("error", err))
 		return fmt.Errorf("%s: task already exists: %w", op, service.ErrAlreadyExist)
 	}
+	log.Error("Unexpected storage error", slog.Any("error", err))
 	return fmt.Errorf("%s: unexpected storage error: %v", op, err)
 }

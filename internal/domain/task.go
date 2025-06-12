@@ -20,6 +20,8 @@ type Task struct {
 	Status    TaskStatus
 	CreatedAt time.Time
 	UpdatedAt time.Time
+
+	Cancel chan struct{}
 }
 
 func (t *Task) LogValue() slog.Value {

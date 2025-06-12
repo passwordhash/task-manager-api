@@ -23,9 +23,12 @@ type Task interface {
 	// it returns an [ErrNotFound]. Thread safety is guaranteed.
 	Get(ctx context.Context, uuid string) (task domain.Task, err error)
 
+	// GetAll retrieves all tasks from the storage. Thread safety is guaranteed.
+	GetAll(ctx context.Context) (tasks []domain.Task, err error)
+
 	UpdateStatus(ctx context.Context,
-		uuid string,
-		status domain.TaskStatus,
-		updatedAt time.Time,
+	    uuid string,
+	    status domain.TaskStatus,
+	    updatedAt time.Time,
 	) error
 }

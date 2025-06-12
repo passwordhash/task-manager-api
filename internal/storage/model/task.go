@@ -12,8 +12,9 @@ type Task struct {
 	UpdatedAt time.Time
 }
 
-func (task *Task) ToDomain() domain.Task {
+func (task *Task) ToDomain(uuid string) domain.Task {
 	return domain.Task{
+		UUID:      uuid,
 		Status:    domain.TaskStatus(task.Status),
 		CreatedAt: task.CreatedAt,
 		UpdatedAt: task.UpdatedAt,

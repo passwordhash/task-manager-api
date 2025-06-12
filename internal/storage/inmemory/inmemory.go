@@ -55,7 +55,24 @@ func (t *taskStorage) Get(_ context.Context, uuid string) (domain.Task, error) {
 		return domain.Task{}, fmt.Errorf("%s: %w", op, storage.ErrNotFound)
 	}
 
-	return task.ToDomain(), nil
+	return task.ToDomain(uuid), nil
+}
+
+func (t *taskStorage) GetAll(ctx context.Context) (tasks []domain.Task, err error) {
+	const op = "taskstorage.GetAll"
+
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("%s: %w", op, ctx.Err())
+	}
+
+	for uuid, task := range t.tasks {
+		tasks = append(tasks, task.ToDomain(uuid))
+	}
+
+	return tasks, nil
 }
 
 func (t *taskStorage) UpdateStatus(

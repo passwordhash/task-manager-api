@@ -20,6 +20,12 @@ func NewHandler(
 func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	tasksGroup := router.Group("/tasks")
 	{
+		tasksGroup.GET("/", h.list)
 		tasksGroup.POST("/create", h.create)
+
+		taskGroup := tasksGroup.Group("/:uuid")
+		{
+			taskGroup.POST("/cancel", h.cancel)
+		}
 	}
 }

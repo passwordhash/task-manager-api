@@ -64,21 +64,45 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 	return taskUUUID, nil
 }
 
-func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
-	const op = "task.Cancel"
+func (m *simulatedTaskService) GetAll(ctx context.Context) (tasks []domain.Task, err error) {
+	const op = "MockTaskService.GetAll"
 
-	log := m.log.With(slog.String("op", op), slog.String("uuid", uuid))
+	log := m.log.With(slog.String("op", op))
 
-	log.Info("Cancelling task")
+	log.Info("Retrieving all mock tasks")
 
-	// TODO: some logic ...
-
-	if err := m.workerPool.Cancel(ctx, uuid); err != nil {
-		log.Error("Failed to cancel task", slog.Any("error", err))
-		return fmt.Errorf("%s: failed to cancel task: %v", op, err)
+	tasks, err = m.storage.GetAll(ctx)
+	if err != nil {
+		log.Error("Failed to retrieve tasks", slog.Any("error", err))
+		return nil, fmt.Errorf("%s: failed to retrieve tasks: %v", op, err)
 	}
 
-	log.Info("Task cancelled successfully")
+	log.Info("Retrieved all mock tasks successfully", slog.Int("count", len(tasks)))
+
+	return tasks, nil
+}
+
+func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
+	const op = "MockTaskService.Cancel"
+
+	log := m.log.With(slog.String("op", op), slog.String("task_uuid", uuid))
+
+	log.Info("Cancelling mock task")
+
+	task, err := m.storage.Get(ctx, uuid)
+	if err != nil {
+		log.Error("Failed to retrieve task", slog.Any("error", err))
+		return fmt.Errorf("%s: failed to retrieve task: %v", op, err)
+	}
+
+	if task.Status == domain.StatusCompleted || task.Status == domain.StatusCancelled {
+		log.Warn("Task is already completed or cancelled", slog.Any("task_status", task.Status))
+		return nil
+	}
+
+	task.Cancel <- struct{}{}
+
+	log.Info("Mock task cancelled successfully")
 
 	return nil
 }

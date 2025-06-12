@@ -33,7 +33,7 @@ func NewSimulatedTaskService(
 }
 
 func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
-	const op = "MockTaskService.CreateTask"
+	const op = "task.CreateTask"
 
 	log := m.log.With(slog.String("op", op))
 
@@ -62,4 +62,23 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 	log.Info("Mock task created and saved", "task", task)
 
 	return taskUUUID, nil
+}
+
+func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
+	const op = "task.Cancel"
+
+	log := m.log.With(slog.String("op", op), slog.String("uuid", uuid))
+
+	log.Info("Cancelling task")
+
+	// TODO: some logic ...
+
+	if err := m.workerPool.Cancel(ctx, uuid); err != nil {
+		log.Error("Failed to cancel task", slog.Any("error", err))
+		return fmt.Errorf("%s: failed to cancel task: %v", op, err)
+	}
+
+	log.Info("Task cancelled successfully")
+
+	return nil
 }

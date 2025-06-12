@@ -14,4 +14,7 @@ var (
 type TaskService interface {
 	// CreateTask creates a new task with status [domain.StatusPending] and returns its UUID.
 	CreateTask(ctx context.Context) (uuid string, err error)
+
+	// TODO: doc
+	Cancel(ctx context.Context, uuid string) error
 }

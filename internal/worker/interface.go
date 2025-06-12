@@ -16,6 +16,9 @@ type TaskPool interface {
 	// Submit adds a task to the pool for execution.
 	Submit(ctx context.Context, task *domain.Task) error
 
+	// TODO: doc
+	Cancel(ctx context.Context, taskID string) error
+
 	// Stop gracefully stops the pool pool, waiting for all tasks to complete
 	// or the context to be done.
 	Stop(ctx context.Context) error

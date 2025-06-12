@@ -26,12 +26,6 @@ func New(log *slog.Logger) *simulateIOExecutor {
 }
 
 func (e *simulateIOExecutor) Execute(ctx context.Context, task *domain.Task) (time.Time, error) {
-	const op = "executor.Execute"
-
-	log := e.log.With(slog.String("op", op), slog.String("task_uuid", task.UUID))
-
-	log.Debug("Starting task execution")
-
 	done := make(chan struct{})
 	go func() {
 		time.Sleep(ioDuration)
@@ -40,12 +34,9 @@ func (e *simulateIOExecutor) Execute(ctx context.Context, task *domain.Task) (ti
 
 	select {
 	case <-ctx.Done():
-		log.Debug("Task execution cancelled", slog.String("task_uuid", task.UUID))
 		return time.Time{}, ctx.Err()
 	case <-done:
 		finishedAt := time.Now()
-
-		log.Debug("Task execution completed", slog.String("task_uuid", task.UUID))
 
 		return finishedAt, nil
 	}

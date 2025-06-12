@@ -6,6 +6,7 @@ package pool
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -94,7 +95,7 @@ func (p *pool) Submit(ctx context.Context, task *domain.Task) error {
 	}
 }
 
-func (p *pool) Cancel(ctx context.Context, taskUUID string) error {
+func (p *pool) Cancel(_ context.Context, taskUUID string) error {
 	const op = "pool.Cancel"
 
 	log := p.log.With(slog.String("op", op), slog.String("task_id", taskUUID))
@@ -142,7 +143,7 @@ func (p *pool) Stop(ctx context.Context) error {
 func (p *pool) worker(ctx context.Context, id int) {
 	defer p.wg.Done()
 
-	const op = "pool.pool"
+	const op = "pool.worker"
 
 	log := p.log.With(slog.String("op", op), slog.Int("worker_id", id))
 
@@ -158,12 +159,17 @@ func (p *pool) worker(ctx context.Context, id int) {
 
 			wlog := log.With(slog.String("task_uuid", tw.task.UUID))
 
+			wlog.Debug("Received task for execution")
+
 			_ = p.taskStorage.UpdateStatus(ctx, tw.task.UUID, domain.StatusPending, time.Now())
 			//TODO: error handling
 
 			var status domain.TaskStatus
 			updatedAt, err := p.executor.Execute(tw.ctx, tw.task)
-			if err != nil {
+			if err != nil && errors.Is(err, context.Canceled) {
+				wlog.Debug("Task execution cancelled by context")
+				status = domain.StatusCancelled
+			} else if err != nil && !errors.Is(err, context.Canceled) {
 				wlog.Error("Failed to execute task", slog.String("error", err.Error()))
 				status = domain.StatusFailed
 			} else {

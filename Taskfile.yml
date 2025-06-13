@@ -12,16 +12,15 @@ tasks:
         desc: Run the application
         cmds:
             - go run ./cmd/http_server/main.go
-            -
 
-    run-for-test:
+    run-for-tests:
         desc: Run the application for integration testing
         cmds:
             - |
                 export WORKERS={{.WORKERS_COUNT}}
                 export PORT={{.PORT}}
                 go run -race ./cmd/http_server/main.go -io-duration {{.TASK_DURATION}}
-    run-func-tests:
+    func-tests:
         desc: Run the functional tests
         cmds:
             - |

@@ -1,5 +1,8 @@
 package executor
 
+// Package executor provides an mock implementation of the Executor
+// interface that simulates I/O operations.
+
 import (
 	"context"
 	"flag"
@@ -19,10 +22,8 @@ type simulateIOExecutor struct {
 	log *slog.Logger
 }
 
-func New(log *slog.Logger) *simulateIOExecutor {
-	return &simulateIOExecutor{
-		log: log,
-	}
+func New() *simulateIOExecutor {
+	return &simulateIOExecutor{}
 }
 
 func (e *simulateIOExecutor) Execute(ctx context.Context, task *domain.Task) (time.Time, error) {

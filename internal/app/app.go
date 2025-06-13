@@ -21,10 +21,10 @@ func New(
 ) *App {
 	taskStorage := inmemory.NewTaskStorage()
 
-	exec := executor.New(log.WithGroup("executor"))
+	exec := executor.New()
 
 	workerPool := pool.New(
-		log.WithGroup("pool"),
+		log.WithGroup("worker"),
 		cfg.App.Workers,
 		cfg.App.TaskQueueSize,
 		exec,

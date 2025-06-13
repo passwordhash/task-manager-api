@@ -16,7 +16,7 @@ type TaskPool interface {
 	// Submit adds a task to the pool for execution.
 	Submit(ctx context.Context, task *domain.Task) error
 
-	// TODO: doc
+	// Cancel stops a specific task by its ID.
 	Cancel(ctx context.Context, taskID string) error
 
 	// Stop gracefully stops the pool pool, waiting for all tasks to complete
@@ -27,5 +27,7 @@ type TaskPool interface {
 // TaskExecutor defines the interface for executing tasks.
 type TaskExecutor interface {
 	// Execute runs i/ob-bound operation.
+	// It returns the time when the task finished (even if it failed),
+	// and an error if the execution failed.
 	Execute(ctx context.Context, task *domain.Task) (finishedAt time.Time, error error)
 }

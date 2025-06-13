@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 )
@@ -19,7 +20,22 @@ type Task struct {
 	UUID      string
 	Status    TaskStatus
 	CreatedAt time.Time
+	StartedAt time.Time
 	UpdatedAt time.Time
+}
+
+func (t *Task) RunningDuration() time.Duration {
+	fmt.Println(t.StartedAt.String())
+	switch t.Status {
+	case StatusPending:
+		return 0
+	case StatusRunning:
+		return time.Since(t.StartedAt)
+	case StatusCompleted, StatusFailed, StatusCancelled:
+		return t.UpdatedAt.Sub(t.StartedAt)
+	default:
+		return 0
+	}
 }
 
 func (t *Task) LogValue() slog.Value {

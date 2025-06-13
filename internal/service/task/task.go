@@ -48,12 +48,29 @@ func (m *simulatedTaskService) CreateTask(ctx context.Context) (string, error) {
 		return "", m.handleStorageError(log, op, err)
 	}
 
-	_ = m.workerPool.Submit(ctx, &task)
-	// TODO: handle worker pool submission errors
+	if err := m.workerPool.Submit(ctx, &task); err != nil {
+		log.Error("Failed to submit task to worker pool", slog.Any("error", err))
+		return "", fmt.Errorf("%s: %w", op, service.ErrCantSubmit)
+	}
 
 	log.Info("Task created and saved", "task", task)
 
 	return task.UUID, nil
+}
+
+func (m *simulatedTaskService) Get(ctx context.Context, uuid string) (task domain.Task, err error) {
+	const op = "MockTaskService.Get"
+
+	log := m.log.With(slog.String("op", op), slog.String("task_uuid", uuid))
+
+	task, err = m.storage.Get(ctx, uuid)
+	if err != nil {
+		return domain.Task{}, m.handleStorageError(log, op, err)
+	}
+
+	log.Info("Retrieved task", slog.Any("task", task))
+
+	return task, nil
 }
 
 func (m *simulatedTaskService) GetAll(ctx context.Context) (tasks []domain.Task, err error) {

@@ -9,6 +9,7 @@ import (
 type Task struct {
 	Status    string
 	CreatedAt time.Time
+	StartedAt time.Time
 	UpdatedAt time.Time
 }
 
@@ -17,6 +18,7 @@ func (task *Task) ToDomain(uuid string) domain.Task {
 		UUID:      uuid,
 		Status:    domain.TaskStatus(task.Status),
 		CreatedAt: task.CreatedAt,
+		StartedAt: task.StartedAt,
 		UpdatedAt: task.UpdatedAt,
 	}
 }
@@ -25,6 +27,7 @@ func FromDomainToTask(task domain.Task) *Task {
 	return &Task{
 		Status:    string(task.Status),
 		CreatedAt: task.CreatedAt,
+		StartedAt: task.StartedAt,
 		UpdatedAt: task.UpdatedAt,
 	}
 }

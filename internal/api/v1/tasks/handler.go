@@ -25,6 +25,7 @@ func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 
 		taskGroup := tasksGroup.Group("/:uuid")
 		{
+			taskGroup.GET("/status", h.status)
 			taskGroup.POST("/cancel", h.cancel)
 		}
 	}

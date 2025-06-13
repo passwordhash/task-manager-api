@@ -101,7 +101,11 @@ func (a *App) Stop(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
 	defer cancel()
 
-	a.taskPool.Stop(ctx) // TODO: log
+	if err := a.taskPool.Stop(ctx); err != nil {
+		log.Error("Failed to stop task pool", slog.Any("error", err))
+	} else {
+		log.Info("Task pool stopped gracefully")
+	}
 
 	// Shutdown stops receiving new requests and waits for existing requests to finish.
 	if err := a.server.Shutdown(ctx); err != nil {

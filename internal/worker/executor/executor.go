@@ -34,10 +34,8 @@ func (e *simulateIOExecutor) Execute(ctx context.Context, task *domain.Task) (ti
 
 	select {
 	case <-ctx.Done():
-		return time.Time{}, ctx.Err()
+		return time.Now(), ctx.Err()
 	case <-done:
-		finishedAt := time.Now()
-
-		return finishedAt, nil
+		return time.Now(), nil
 	}
 }

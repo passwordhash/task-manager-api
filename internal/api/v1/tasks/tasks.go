@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/passwordhash/task-manager-api/internal/api/v1/response"
@@ -33,6 +34,35 @@ type task struct {
 
 type listTasksResponse struct {
 	Tasks []task `json:"tasks"`
+}
+
+type statusResponse struct {
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+	Duration  string `json:"duration"`
+}
+
+func (h *handler) status(c *gin.Context) {
+	uuid := c.Param("uuid")
+	if uuid == "" {
+		response.NewErr(c, http.StatusBadRequest, response.ErrBadRequestParams, "Task UUID is required")
+		return
+	}
+
+	task, err := h.taskService.Get(c, uuid)
+	if errors.Is(err, service.ErrNotFound) {
+		response.NewErr(c, http.StatusNotFound, response.ErrNotFound, "Task not found")
+		return
+	}
+	if response.HandleError(c, err) {
+		return
+	}
+
+	response.NewOk(c, statusResponse{
+		Status:    string(task.Status),
+		CreatedAt: task.CreatedAt.Format(time.RFC3339),
+		Duration:  task.RunningDuration().String(),
+	})
 }
 
 func (h *handler) list(c *gin.Context) {
@@ -66,6 +96,7 @@ func (h *handler) cancel(c *gin.Context) {
 	}
 	if errors.Is(err, service.ErrCantCancel) {
 		response.NewErr(c, http.StatusConflict, errors.New("cant_be_canceled"), "Task cannot be cancelled because it is already completed or cancelled")
+		return
 	}
 	if response.HandleError(c, err) {
 		return

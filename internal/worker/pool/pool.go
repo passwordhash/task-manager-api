@@ -36,11 +36,11 @@ type pool struct {
 }
 
 func New(
-	log *slog.Logger,
-	workers int,
-	queueSize int,
-	executor worker.TaskExecutor,
-	taskStorage storage.Task,
+    log *slog.Logger,
+    workers int,
+    queueSize int,
+    executor worker.TaskExecutor,
+    taskStorage storage.Task,
 ) worker.TaskPool {
 	return &pool{
 		log:         log,
@@ -161,8 +161,11 @@ func (p *pool) worker(ctx context.Context, id int) {
 
 			wlog.Debug("Received task for execution")
 
-			_ = p.taskStorage.UpdateStatus(ctx, tw.task.UUID, domain.StatusPending, time.Now())
-			//TODO: error handling
+			if err := p.taskStorage.UpdateStatus(ctx, tw.task.UUID, domain.StatusRunning, time.Now()); err != nil {
+				// Maybe we should use some retry mechanism here?
+				wlog.Error("Failed to update task status to running", slog.String("error", err.Error()))
+				continue
+			}
 
 			var status domain.TaskStatus
 			updatedAt, err := p.executor.Execute(tw.ctx, tw.task)
@@ -177,8 +180,11 @@ func (p *pool) worker(ctx context.Context, id int) {
 				status = domain.StatusCompleted
 			}
 
-			_ = p.taskStorage.UpdateStatus(ctx, tw.task.UUID, status, updatedAt)
-			// TODO: error handling
+			if err := p.taskStorage.UpdateStatus(ctx, tw.task.UUID, status, updatedAt); err != nil {
+				// Maybe we should use some retry mechanism here?
+				wlog.Error("Failed to update task status after execution", slog.String("error", err.Error()))
+				continue
+			}
 		case <-ctx.Done():
 			log.Debug("Worker stopped")
 			return

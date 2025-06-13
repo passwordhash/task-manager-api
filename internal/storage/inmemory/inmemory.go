@@ -91,6 +91,10 @@ func (t *taskStorage) UpdateStatus(
 		return fmt.Errorf("%s: %w", op, storage.ErrNotFound)
 	}
 
+	if status == domain.StatusRunning && domain.TaskStatus(task.Status) == domain.StatusPending {
+		task.StartedAt = updatedAt
+	}
+
 	task.Status = string(status)
 	task.UpdatedAt = updatedAt
 

@@ -1,7 +1,5 @@
 package config
 
-// TODO: тесты для конфигурации
-
 import (
 	"flag"
 	"os"

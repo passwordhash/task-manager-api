@@ -2,8 +2,30 @@ version: "3"
 
 dotenv: [.env.local]
 
+vars:
+    WORKERS_COUNT: 3
+    TASK_DURATION: 1s
+    PORT: 8080
+
 tasks:
     run:
         desc: Run the application
         cmds:
             - go run ./cmd/http_server/main.go
+            -
+
+    run-for-test:
+        desc: Run the application for integration testing
+        cmds:
+            - |
+                export WORKERS={{.WORKERS_COUNT}}
+                export PORT={{.PORT}}
+                go run ./cmd/http_server/main.go -io-duration {{.TASK_DURATION}}
+    run-func-tests:
+        desc: Run the functional tests
+        cmds:
+            - |
+                export WORKERS={{.WORKERS_COUNT}}
+                export TASK_DURATION={{.TASK_DURATION}}
+                export PORT={{.PORT}}
+                go test -v ./tests/...

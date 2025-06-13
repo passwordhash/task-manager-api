@@ -17,6 +17,7 @@ var ioDuration time.Duration
 
 func init() {
 	flag.DurationVar(&ioDuration, "io-duration", 10*time.Second, "Duration to simulate I/O operation in the executor")
+	flag.Parse()
 }
 
 type simulateIOExecutor struct {

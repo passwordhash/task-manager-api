@@ -21,7 +21,7 @@ func (h *handler) RegisterRoutes(router *gin.RouterGroup) {
 	tasksGroup := router.Group("/tasks")
 	{
 		tasksGroup.GET("/", h.list)
-		tasksGroup.POST("/create", h.create)
+		tasksGroup.POST("/", h.create)
 
 		taskGroup := tasksGroup.Group("/:uuid")
 		{

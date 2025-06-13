@@ -132,8 +132,8 @@ func (p *pool) Stop(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		log.Warn("Context cancelled before workers finished")
-		return fmt.Errorf("%s: context cancelled before workers finished: %w", op, ctx.Err())
+		log.Warn("Context canceled before workers finished")
+		return fmt.Errorf("%s: context canceled before workers finished: %w", op, ctx.Err())
 	case <-done:
 		log.Info("Worker pool stopped")
 		return nil
@@ -173,8 +173,8 @@ func (p *pool) worker(ctx context.Context, id int) {
 			var status domain.TaskStatus
 			execRes, err := p.executor.Execute(tw.ctx, tw.task)
 			if err != nil && errors.Is(err, context.Canceled) {
-				wlog.Debug("Task execution cancelled by context")
-				status = domain.StatusCancelled
+				wlog.Debug("Task execution canceled by context")
+				status = domain.StatusCanceled
 			} else if err != nil && !errors.Is(err, context.Canceled) {
 				wlog.Error("Failed to execute task", slog.String("error", err.Error()))
 				status = domain.StatusFailed

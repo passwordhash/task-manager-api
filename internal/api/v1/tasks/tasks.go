@@ -108,12 +108,12 @@ func (h *handler) cancel(c *gin.Context) {
 		return
 	}
 	if errors.Is(err, service.ErrCantCancel) {
-		response.NewErr(c, http.StatusConflict, errors.New("cant_be_canceled"), "Task cannot be cancelled because it is already completed or cancelled")
+		response.NewErr(c, http.StatusConflict, errors.New("cant_be_canceled"), "Task cannot be canceled because it is already completed or cancelled")
 		return
 	}
 	if response.HandleError(c, err) {
 		return
 	}
 
-	response.NewOk(c, response.Message{Message: "Task cancelled successfully"})
+	response.NewOk(c, response.Message{Message: "Task canceled successfully"})
 }

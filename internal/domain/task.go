@@ -13,7 +13,7 @@ const (
 	StatusRunning              = "running"
 	StatusCompleted            = "completed"
 	StatusFailed               = "failed"
-	StatusCancelled            = "cancelled"
+	StatusCanceled             = "canceled"
 )
 
 type Task struct {
@@ -33,7 +33,7 @@ func (t *Task) RunningDuration() time.Duration {
 		return 0
 	case StatusRunning:
 		return time.Since(t.StartedAt)
-	case StatusCompleted, StatusFailed, StatusCancelled:
+	case StatusCompleted, StatusFailed, StatusCanceled:
 		return t.UpdatedAt.Sub(t.StartedAt)
 	default:
 		return 0

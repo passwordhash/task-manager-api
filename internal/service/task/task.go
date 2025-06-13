@@ -98,8 +98,8 @@ func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
 		return m.handleStorageError(log, op, err)
 	}
 
-	if task.Status == domain.StatusCompleted || task.Status == domain.StatusCancelled {
-		log.Warn("Task is already completed or cancelled", slog.Any("task_status", task.Status))
+	if task.Status == domain.StatusCompleted || task.Status == domain.StatusCanceled {
+		log.Warn("Task is already completed or canceled", slog.Any("task_status", task.Status))
 		return fmt.Errorf("%s: %w", op, service.ErrCantCancel)
 	}
 
@@ -108,7 +108,7 @@ func (m *simulatedTaskService) Cancel(ctx context.Context, uuid string) error {
 		return fmt.Errorf("%s: failed to cancel task: %v", op, err)
 	}
 
-	log.Info("Task cancelled successfully")
+	log.Info("Task canceled successfully")
 
 	return nil
 }

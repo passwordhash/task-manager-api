@@ -13,6 +13,14 @@ var (
 	ErrNotFound      = errors.New("not found")
 )
 
+type TaskUpdate struct {
+	Status    domain.TaskStatus
+	UpdatedAt time.Time
+	StartedAt time.Time
+	Result    any
+	Error     error
+}
+
 // Task defines the interface for task storage operations.
 type Task interface {
 	// Save persists a task in the storage. If the task already exists,
@@ -26,9 +34,5 @@ type Task interface {
 	// GetAll retrieves all tasks from the storage. Thread safety is guaranteed.
 	GetAll(ctx context.Context) (tasks []domain.Task, err error)
 
-	UpdateStatus(ctx context.Context,
-		uuid string,
-		status domain.TaskStatus,
-		updatedAt time.Time,
-	) error
+	Update(ctx context.Context, uuid string, update TaskUpdate) (err error)
 }

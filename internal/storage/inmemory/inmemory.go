@@ -75,28 +75,39 @@ func (t *taskStorage) GetAll(ctx context.Context) (tasks []domain.Task, err erro
 	return tasks, nil
 }
 
-func (t *taskStorage) UpdateStatus(
-	_ context.Context,
-	key string,
-	status domain.TaskStatus,
-	updatedAt time.Time,
-) error {
+func (t *taskStorage) Update(_ context.Context, uuid string, u storage.TaskUpdate) error {
 	const op = "taskstorage.Update"
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	task, exists := t.tasks[key]
+	task, exists := t.tasks[uuid]
 	if !exists {
 		return fmt.Errorf("%s: %w", op, storage.ErrNotFound)
 	}
 
-	if status == domain.StatusRunning && domain.TaskStatus(task.Status) == domain.StatusPending {
-		task.StartedAt = updatedAt
+	if u.Status != "" {
+		if u.Status == domain.StatusRunning &&
+			domain.TaskStatus(task.Status) == domain.StatusPending {
+			now := time.Now()
+			task.StartedAt = now
+		}
+		task.Status = string(u.Status)
 	}
 
-	task.Status = string(status)
-	task.UpdatedAt = updatedAt
+	if !u.UpdatedAt.IsZero() {
+		task.UpdatedAt = u.UpdatedAt
+	}
+	if !u.StartedAt.IsZero() {
+		task.StartedAt = u.StartedAt
+	}
+	if u.Result != nil {
+		task.Result = u.Result
+	}
+	if u.Error != nil {
+		task.Error = u.Error
+	}
 
+	t.tasks[uuid] = task
 	return nil
 }

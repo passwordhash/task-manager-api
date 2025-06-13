@@ -11,6 +11,8 @@ type Task struct {
 	CreatedAt time.Time
 	StartedAt time.Time
 	UpdatedAt time.Time
+	Result    any
+	Error     error
 }
 
 func (task *Task) ToDomain(uuid string) domain.Task {
@@ -20,6 +22,8 @@ func (task *Task) ToDomain(uuid string) domain.Task {
 		CreatedAt: task.CreatedAt,
 		StartedAt: task.StartedAt,
 		UpdatedAt: task.UpdatedAt,
+		Result:    task.Result,
+		Error:     task.Error,
 	}
 }
 
@@ -29,5 +33,7 @@ func FromDomainToTask(task domain.Task) *Task {
 		CreatedAt: task.CreatedAt,
 		StartedAt: task.StartedAt,
 		UpdatedAt: task.UpdatedAt,
+		Result:    task.Result,
+		Error:     task.Error,
 	}
 }

@@ -22,6 +22,8 @@ type Task struct {
 	CreatedAt time.Time
 	StartedAt time.Time
 	UpdatedAt time.Time
+	Result    any
+	Error     error
 }
 
 func (t *Task) RunningDuration() time.Duration {

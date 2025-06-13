@@ -161,14 +161,17 @@ func (p *pool) worker(ctx context.Context, id int) {
 
 			wlog.Debug("Received task for execution")
 
-			if err := p.taskStorage.UpdateStatus(ctx, tw.task.UUID, domain.StatusRunning, time.Now()); err != nil {
+			if err := p.taskStorage.Update(ctx, tw.task.UUID, storage.TaskUpdate{
+				Status:    domain.StatusRunning,
+				UpdatedAt: time.Now(),
+			}); err != nil {
 				// Maybe we should use some retry mechanism here?
 				wlog.Error("Failed to update task status to running", slog.String("error", err.Error()))
 				continue
 			}
 
 			var status domain.TaskStatus
-			updatedAt, err := p.executor.Execute(tw.ctx, tw.task)
+			execRes, err := p.executor.Execute(tw.ctx, tw.task)
 			if err != nil && errors.Is(err, context.Canceled) {
 				wlog.Debug("Task execution cancelled by context")
 				status = domain.StatusCancelled
@@ -180,7 +183,16 @@ func (p *pool) worker(ctx context.Context, id int) {
 				status = domain.StatusCompleted
 			}
 
-			if err := p.taskStorage.UpdateStatus(ctx, tw.task.UUID, status, updatedAt); err != nil {
+			if updateErr := p.taskStorage.Update(
+				tw.ctx,
+				tw.task.UUID,
+				storage.TaskUpdate{
+					Status:    status,
+					UpdatedAt: time.Now(),
+					StartedAt: tw.task.StartedAt,
+					Result:    execRes.Result,
+					Error:     err,
+				}); updateErr != nil {
 				// Maybe we should use some retry mechanism here?
 				wlog.Error("Failed to update task status after execution", slog.String("error", err.Error()))
 				continue

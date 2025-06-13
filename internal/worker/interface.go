@@ -24,10 +24,15 @@ type TaskPool interface {
 	Stop(ctx context.Context) error
 }
 
+type ExecuteResult struct {
+	Result     any
+	FinishedAt time.Time
+}
+
 // TaskExecutor defines the interface for executing tasks.
 type TaskExecutor interface {
 	// Execute runs i/ob-bound operation.
 	// It returns the time when the task finished (even if it failed),
 	// and an error if the execution failed.
-	Execute(ctx context.Context, task *domain.Task) (finishedAt time.Time, error error)
+	Execute(ctx context.Context, task *domain.Task) (result *ExecuteResult, error error)
 }

@@ -27,19 +27,13 @@ func (h *handler) create(c *gin.Context) {
 	response.NewOk(c, createTaskResponse{TaskUUID: uuid})
 }
 
-type task struct {
-	UUID   string `json:"uuid"`
-	Status string `json:"status"`
-}
-
-type listTasksResponse struct {
-	Tasks []task `json:"tasks"`
-}
-
 type statusResponse struct {
 	Status    string `json:"status"`
 	CreatedAt string `json:"created_at"`
 	Duration  string `json:"duration"`
+
+	Result any    `json:"result,omitempty"`
+	Error  string `json:"error,omitempty"`
 }
 
 func (h *handler) status(c *gin.Context) {
@@ -58,11 +52,30 @@ func (h *handler) status(c *gin.Context) {
 		return
 	}
 
+	var taskErrResp string
+	if task.Error != nil {
+		taskErrResp = task.Error.Error()
+	}
+
 	response.NewOk(c, statusResponse{
 		Status:    string(task.Status),
 		CreatedAt: task.CreatedAt.Format(time.RFC3339),
 		Duration:  task.RunningDuration().String(),
+
+		Result: task.Result,
+		Error:  taskErrResp,
 	})
+}
+
+type task struct {
+	UUID   string `json:"uuid"`
+	Status string `json:"status"`
+	Result string `json:"result,omitempty"`
+	Error  string `json:"error,omitempty"`
+}
+
+type listTasksResponse struct {
+	Tasks []task `json:"tasks"`
 }
 
 func (h *handler) list(c *gin.Context) {

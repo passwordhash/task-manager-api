@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	"github.com/passwordhash/task-manager-api/internal/app"
 	"github.com/passwordhash/task-manager-api/internal/config"
@@ -35,7 +36,10 @@ func main() {
 
 	log.Info("received signal stop signal")
 
-	application.HTTPSrv.Stop(ctx)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	application.HTTPSrv.Stop(shutdownCtx)
 
 	log.Info("stopped Task Manager API application")
 }

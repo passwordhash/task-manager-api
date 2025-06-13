@@ -20,7 +20,7 @@ tasks:
             - |
                 export WORKERS={{.WORKERS_COUNT}}
                 export PORT={{.PORT}}
-                go run ./cmd/http_server/main.go -io-duration {{.TASK_DURATION}}
+                go run -race ./cmd/http_server/main.go -io-duration {{.TASK_DURATION}}
     run-func-tests:
         desc: Run the functional tests
         cmds:

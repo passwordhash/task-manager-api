@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,7 @@ type App struct {
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 
+	mu     sync.Mutex
 	server *http.Server
 }
 
@@ -85,7 +87,10 @@ func (a *App) Run(ctx context.Context) error {
 		ReadTimeout:  a.readTimeout,
 		WriteTimeout: a.writeTimeout,
 	}
+
+	a.mu.Lock()
 	a.server = srv
+	a.mu.Unlock()
 
 	return srv.ListenAndServe()
 }
@@ -98,17 +103,18 @@ func (a *App) Stop(ctx context.Context) {
 
 	log.Info("Stopping HTTP server")
 
-	ctx, cancel := context.WithTimeout(ctx, shutdownTimeout)
-	defer cancel()
-
 	if err := a.taskPool.Stop(ctx); err != nil {
 		log.Error("Failed to stop task pool", slog.Any("error", err))
 	} else {
 		log.Info("Task pool stopped gracefully")
 	}
 
-	// Shutdown stops receiving new requests and waits for existing requests to finish.
-	if err := a.server.Shutdown(ctx); err != nil {
+	a.mu.Lock()
+	server := a.server
+	a.mu.Unlock()
+
+	//Shutdown stops receiving new requests and waits for existing requests to finish.
+	if err := server.Shutdown(ctx); err != nil {
 		log.Error("Failed to gracefully stop HTTP server", slog.Any("error", err))
 	} else {
 		log.Info("HTTP server stopped gracefully")

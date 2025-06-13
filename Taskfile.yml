@@ -11,7 +11,7 @@ tasks:
     run:
         desc: Run the application
         cmds:
-            - go run ./cmd/http_server/main.go
+            - go run -race cmd/http_server/main.go -config configs/local.yml -io-duration=20s
 
     run-for-tests:
         desc: Run the application for integration testing
